@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fechamento de Caixa Atualizado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Variáveis de Cores e Estilo */
+        :root {
+            --primary: #6366f1;
+            --secondary: #9333ea;
+            --accent: #22c55e;
+            --background: #f3f4f6;
+            --card-background: #ffffff;
+            --text-color: #1f2937;
+            --muted-text-color: #6b7280;
+            --border-color: #d1d5db;
+            --focus-ring: rgba(99, 102, 241, 0.5);
+            --touch-feedback: rgba(99, 102, 241, 0.1);
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        /* Reset Básico */
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Estilo do Corpo */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 20px 10px;
+            background-color: var(--background);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        /* Container Principal do Aplicativo */
+        .cash-counter-app {
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--card-background);
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+        }
+
+        /* Título e Data/Hora */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            color: var(--primary);
+        }
+        .header p {
+            font-size: 0.85rem;
+            color: var(--muted-text-color);
+            margin-top: 5px;
+        }
+        .mode-indicator {
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 6px;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        .mode-indicator.quantity {
+            background-color: var(--accent);
+            color: white;
+        }
+        .mode-indicator.weight {
+            background-color: var(--warning);
+            color: var(--text-color);
+        }
+
+        /* Estilo dos Inputs */
+        .currency-input-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            transition: all 0.2s ease;
+        }
+        .currency-input-group.focused {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--focus-ring);
+        }
+        .currency-label {
+            font-weight: 600;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            width: 30%;
+        }
+        .input-field {
+            width: 65%;
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            text-align: right;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--text-color);
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Seção de Total */
+        .total-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 10px;
+            margin-top: 20px;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 10px;
+            font-weight: 700;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .total-label {
+            font-size: 1.1rem;
+        }
+        .total-value {
+            font-size: 1.4rem;
+        }
+
+        /* Seção de Retirada (Novo) */
+        .withdrawal-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--card-background);
+            border: 2px dashed var(--error); /* Destaca mais a retirada */
+            border-radius: 10px;
+            padding: 15px 10px;
+            margin-top: 15px;
+        }
+        
+        /* Estilização para o Input de Retirada (melhor usabilidade) */
+        #withdrawalAmount {
+            width: 120px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--error);
+            border-color: var(--error);
+        }
+        #withdrawalAmount:focus {
+            border-color: var(--error);
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
+        }
+
+
+        /* Seção de Notas Adicionais */
+        .notes-section {
+            margin-top: 20px;
+        }
+        .notes-section label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.95rem;
+        }
+        .notes-section textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            min-height: 80px;
+            resize: vertical;
+            font-size: 0.9rem;
+        }
+
+        /* Histórico */
+        .history-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+        .history-section h2 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+        .history-list {
+            list-style: none;
+            padding: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0 10px;
+        }
+        .history-list li {
+            padding: 8px 0;
+            border-bottom: 1px dashed var(--border-color);
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-list li:last-child {
+            border-bottom: none;
+        }
+        .history-date {
+            color: var(--muted-text-color);
+            flex-grow: 1;
+        }
+        .history-total {
+            font-weight: 600;
+        }
+        .history-delete-btn {
+            background: none;
+            border: none;
+            color: var(--error);
+            cursor: pointer;
+            font-size: 1rem;
+            margin-left: 10px;
+            padding: 0 5px;
+            transition: opacity 0.2s;
+        }
+        .history-delete-btn:hover {
+            opacity: 0.7;
+        }
+
+        /* Botões de Ação */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 25px;
+        }
+        .action-buttons-bottom {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 10px;
+            justify-content: stretch;
+        }
+
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            grid-column: span 2;
+        }
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+        .btn-warning {
+            background-color: var(--warning);
+            color: var(--text-color);
+        }
+        .btn-export {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        /* Estilos de Impressão (Tela) */
+        @media print {
+            body {
+                padding: 0;
+                background-color: white;
+                margin: 0;
+                display: block;
+            }
+            .cash-counter-app {
+                box-shadow: none;
+                padding: 0;
+                border-radius: 0;
+                width: 100%;
+                max-width: none;
+            }
+            /* Esconde elementos de controle na impressão */
+            .no-print, .action-buttons {
+                display: none !important;
+            }
+        }
+
+        /* Estilos de Impressão (Comprovante Pequeno) - Exclusivo para o conteúdo gerado no pop-up */
+        .print-small-container {
+            width: 100%;
+            max-width: 320px; /* Largura típica de comprovante */
+            padding: 10px;
+            font-family: monospace;
+            font-size: 10px;
+        }
+        .print-small-container h3 {
+            text-align: center;
+            margin: 5px 0;
+            font-size: 12px;
+            border-bottom: 1px dashed black;
+            padding-bottom: 5px;
+        }
+        .print-small-container .total-line {
+            font-weight: bold;
+            margin: 4px 0;
+        }
+        .print-small-container .separator {
+            border-top: 1px dashed black;
+            margin: 8px 0;
+        }
+        .print-small-container .detail-line {
+            margin: 2px 0;
+            font-size: 10px;
+        }
+        .print-small-container .center {
+            text-align: center;
+        }
+        .print-small-container .footer-text {
+            font-size: 9px;
+            margin: 2px 0;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div class="cash-counter-app">
+        <div class="header">
+            <h1>Contagem e Fechamento de Caixa</h1>
+            <p id="currentDateTime"></p>
+            <span id="modeIndicator" class="mode-indicator quantity">MODO: QUANTIDADE</span>
+        </div>
+
+        <div id="coinInputs">
+            <!-- Inputs de moedas/cédulas serão renderizados aqui -->
+        </div>
+
+        <div class="notes-section no-print">
+            <label for="notes">Observações do Fechamento:</label>
+            <textarea id="notes" class="input-field" placeholder="Ex: Faltou troco R$ 5,00."></textarea>
+        </div>
+        
+        <div class="total-section">
+            <span class="total-label">Total Geral:</span>
+            <span id="grandTotal" class="total-value">R$ 0,00</span>
+        </div>
+
+        <!-- CAMPO DE RETIRADA REVISADO -->
+        <div class="withdrawal-section no-print">
+            <label for="withdrawalAmount" class="total-label" style="font-size: 0.9rem; margin-right: 0.5rem; color: var(--error); font-weight: 700;">VALOR PARA DEPÓSITO:</label>
+            <input type="number" id="withdrawalAmount" class="input-field" value="0.00" min="0" step="0.01" inputmode="decimal" placeholder="0.00">
+        </div>
+        <!-- FIM CAMPO DE RETIRADA REVISADO -->
+
+        <div class="history-section no-print">
+            <h2>Histórico de Lançamentos</h2>
+            <ul id="cashHistoryLog" class="history-list">
+                <!-- Histórico de fechamentos será inserido aqui -->
+            </ul>
+        </div>
+
+        <div class="action-buttons">
+            <button id="toggleModeBtn" class="btn btn-secondary">Mudar para Modo Pesagem</button>
+            <button id="clearAllBtn" class="btn btn-warning">Limpar Tudo</button>
+            
+            <div class="action-buttons-bottom">
+                <button id="exportCsvBtn" class="btn btn-export">Exportar CSV</button>
+                <button id="exportTextBtn" class="btn btn-export">Exportar TXT</button>
+                <button id="printSmallBtn" class="btn btn-primary">Imprimir Comprovante</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Definições de Cédulas e Moedas (Valor, Nome, Multiplicador de Pesagem em gramas)
+            const DENOMINATIONS = [
+                { value: 200.00, name: 'R$ 200,00', weight: 0.9 }, // Exemplo de peso
+                { value: 100.00, name: 'R$ 100,00', weight: 0.9 },
+                { value: 50.00, name: 'R$ 50,00', weight: 0.9 },
+                { value: 20.00, name: 'R$ 20,00', weight: 0.9 },
+                { value: 10.00, name: 'R$ 10,00', weight: 0.9 },
+                { value: 5.00, name: 'R$ 5,00', weight: 0.9 },
+                { value: 2.00, name: 'R$ 2,00', weight: 0.9 },
+                { value: 1.00, name: 'R$ 1,00 Moeda', weight: 7.0 },
+                { value: 0.50, name: 'R$ 0,50', weight: 6.8 },
+                { value: 0.25, name: 'R$ 0,25', weight: 5.7 },
+                { value: 0.10, name: 'R$ 0,10', weight: 4.8 },
+                { value: 0.05, name: 'R$ 0,05', weight: 3.2 },
+            ];
+            
+            // Constantes e Variáveis de Estado
+            let currentMode = 'quantity'; // 'quantity' ou 'weight'
+            let cashHistory = JSON.parse(localStorage.getItem('cashHistory')) || [];
+            
+            // Elementos DOM
+            const coinInputsContainer = document.getElementById('coinInputs');
+            const grandTotalDisplay = document.getElementById('grandTotal');
+            const clearAllBtn = document.getElementById('clearAllBtn');
+            const exportCsvBtn = document.getElementById('exportCsvBtn');
+            const exportTextBtn = document.getElementById('exportTextBtn');
+            const printSmallBtn = document.getElementById('printSmallBtn');
+            const toggleModeBtn = document.getElementById('toggleModeBtn');
+            const notesInput = document.getElementById('notes');
+            const modeIndicator = document.getElementById('modeIndicator');
+            const cashHistoryLog = document.getElementById('cashHistoryLog');
+            const dateTimeDisplay = document.getElementById('currentDateTime');
+            
+            // Referência ao campo de retirada
+            const withdrawalInput = document.getElementById('withdrawalAmount');
+            
+            let allInputs = [];
+
+            // --- Funções de Utilitário ---
+
+            function formatCurrency(amount) {
+                return (amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+
+            function updateDateTime() {
+                const now = new Date();
+                const dateOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
+                const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+                
+                const dateStr = now.toLocaleDateString('pt-BR', dateOptions);
+                const timeStr = now.toLocaleTimeString('pt-BR', timeOptions);
+                
+                dateTimeDisplay.textContent = `Data: ${dateStr} | Hora: ${timeStr}`;
+            }
+            setInterval(updateDateTime, 1000); // Atualiza a cada segundo
+
+            // --- Lógica Principal de Cálculo ---
+
+            function calculateTotals() {
+                let currentGrandTotal = 0;
+                
+                DENOMINATIONS.forEach(denomination => {
+                    const input = document.getElementById(`input-${denomination.value.toFixed(2).replace('.', '-')}`);
+                    if (input) {
+                        // Trata o valor como float, mas permite que o usuário digite livremente
+                        let value = parseFloat(input.value) || 0;
+                        let totalDenomination = 0;
+
+                        if (currentMode === 'quantity') {
+                            // MODO QUANTIDADE: Input é a contagem
+                            totalDenomination = value * denomination.value;
+                        } else {
+                            // MODO PESAGEM: Input é o peso (g), e precisamos calcular a quantidade
+                            const weightPerUnit = denomination.weight;
+                            if (weightPerUnit > 0) {
+                                const quantity = value / weightPerUnit; // Peso Total / Peso por Unidade
+                                totalDenomination = quantity * denomination.value;
+                            }
+                        }
+                        
+                        currentGrandTotal += totalDenomination;
+                    }
+                });
+                
+                // Exibe o total arredondado
+                grandTotalDisplay.textContent = `R$ ${formatCurrency(currentGrandTotal)}`;
+            }
+
+            // --- Lógica de Interface ---
+
+            function renderCoinInputs() {
+                coinInputsContainer.innerHTML = '';
+                DENOMINATIONS.forEach(denomination => {
+                    const id = denomination.value.toFixed(2).replace('.', '-');
+                    const labelText = currentMode === 'quantity' ? 'Quantidade:' : 'Peso (g):';
+                    // No modo quantidade, o step deve ser 1, no modo pesagem, 0.01 (para maior precisão)
+                    const stepValue = currentMode === 'quantity' ? '1' : '0.01';
+                    
+                    const group = document.createElement('div');
+                    group.className = 'currency-input-group';
+                    group.innerHTML = `
+                        <span class="currency-label">${denomination.name}</span>
+                        <label for="input-${id}" class="currency-label" style="width: 30%; text-align: right; margin-right: 5px;">${labelText}</label>
+                        <input type="number" id="input-${id}" class="input-field" value="0" min="0" step="${stepValue}" inputmode="decimal">
+                    `;
+                    coinInputsContainer.appendChild(group);
+                });
+                updateAllInputsList();
+                initializeInputListeners();
+            }
+            
+            function updateAllInputsList() {
+                 allInputs = Array.from(coinInputsContainer.querySelectorAll('.input-field'));
+                 // Adiciona inputs não-denominacionais
+                 if (notesInput) allInputs.push(notesInput);
+                 // Adiciona o input de retirada
+                 if (withdrawalInput) allInputs.push(withdrawalInput);
+            }
+
+            // Manipuladores de Foco para Efeito Visual
+            function handleFocus(event) {
+                const group = event.target.closest('.currency-input-group');
+                if (group) group.classList.add('focused');
+            }
+
+            function handleBlur(event) {
+                const group = event.target.closest('.currency-input-group');
+                if (group) group.classList.remove('focused');
+                
+                // Formatação simples ao sair do campo (para estética)
+                if (event.target.type === 'number' && event.target.id.startsWith('input-')) {
+                     let val = parseFloat(event.target.value) || 0;
+                     // Garante 0 casas decimais para quantidade, 2 para pesagem
+                     if (currentMode === 'quantity') {
+                        event.target.value = Math.round(val);
+                     } else {
+                        event.target.value = val.toFixed(2);
+                     }
+                }
+            }
+            
+            function addInputListeners(inputElement) {
+                inputElement.addEventListener('input', calculateTotals);
+                inputElement.addEventListener('focus', handleFocus);
+                inputElement.addEventListener('blur', handleBlur);
+            }
+
+            function initializeInputListeners() {
+                coinInputsContainer.querySelectorAll('.input-field').forEach(addInputListeners);
+            }
+
+            function updateModeInterface() {
+                if (currentMode === 'quantity') {
+                    modeIndicator.textContent = 'MODO: QUANTIDADE';
+                    modeIndicator.className = 'mode-indicator quantity';
+                    toggleModeBtn.textContent = 'Mudar para Modo Pesagem';
+                } else {
+                    modeIndicator.textContent = 'MODO: PESAGEM';
+                    modeIndicator.className = 'mode-indicator weight';
+                    toggleModeBtn.textContent = 'Mudar para Modo Quantidade';
+                }
+                renderCoinInputs(); // Renderiza novamente para atualizar labels
+            }
+
+            // --- Funções de Ação ---
+
+            function toggleMode() {
+                currentMode = currentMode === 'quantity' ? 'weight' : 'quantity';
+                localStorage.setItem('cashCounterMode', currentMode);
+                clearAllFields(); // Limpa ao mudar de modo para evitar confusão de valores
+                updateModeInterface();
+            }
+
+            function clearAllFields() {
+                allInputs.forEach(input => {
+                    // Limpa apenas campos numéricos para '0'
+                    if (input.type === 'number') {
+                         input.value = '0';
+                    } else if (input.tagName === 'TEXTAREA') {
+                        input.value = '';
+                    }
+                });
+                
+                // Limpa o campo de retirada para '0.00'
+                if (withdrawalInput) withdrawalInput.value = '0.00';
+                
+                calculateTotals();
+            }
+            
+            function generateReportData() {
+                const report = {
+                    date: new Date().toLocaleDateString('pt-BR'),
+                    time: new Date().toLocaleTimeString('pt-BR'),
+                    mode: currentMode === 'quantity' ? 'QUANTIDADE' : 'PESAGEM',
+                    details: [],
+                    notes: notesInput.value.trim(),
+                    grandTotal: 0,
+                    withdrawal: 0, // Valor da retirada
+                    cashBalance: 0, // Saldo final
+                    history: []
+                };
+
+                let currentGrandTotal = 0;
+                
+                DENOMINATIONS.forEach(denomination => {
+                    const input = document.getElementById(`input-${denomination.value.toFixed(2).replace('.', '-')}`);
+                    if (input) {
+                        const inputValue = parseFloat(input.value) || 0;
+                        let quantity = 0;
+                        let totalDenomination = 0;
+                        
+                        if (currentMode === 'quantity') {
+                            quantity = inputValue;
+                            totalDenomination = quantity * denomination.value;
+                        } else {
+                            const weightPerUnit = denomination.weight;
+                            if (weightPerUnit > 0) {
+                                quantity = inputValue / weightPerUnit;
+                                totalDenomination = quantity * denomination.value;
+                            }
+                        }
+                        
+                        currentGrandTotal += totalDenomination;
+
+                        report.details.push({
+                            name: denomination.name,
+                            input: inputValue,
+                            quantity: Math.round(quantity), // Quantidade arredondada para o relatório
+                            total: totalDenomination
+                        });
+                    }
+                });
+                
+                // Adiciona o valor de retirada (depósito)
+                const withdrawalAmount = parseFloat(withdrawalInput.value) || 0;
+                
+                report.grandTotal = currentGrandTotal;
+                report.withdrawal = withdrawalAmount;
+                report.cashBalance = currentGrandTotal - withdrawalAmount; // Saldo após retirada
+                report.history = cashHistory;
+                return report;
+            }
+
+            // --- Funções de Exportação e Impressão ---
+
+            function exportToCsv() {
+                const reportData = generateReportData();
+                const headers = ['Denominação', reportData.mode === 'QUANTIDADE' ? 'Quantidade' : 'Peso (g)', 'Total'];
+                let csvContent = headers.join(';') + '\n';
+
+                reportData.details.forEach(item => {
+                    const inputVal = item.input.toFixed(2).replace('.', ',');
+                    const totalVal = item.total.toFixed(2).replace('.', ',');
+                    csvContent += `${item.name};"${inputVal}";"${totalVal}"\n`;
+                });
+                
+                // Adiciona totais e notas
+                csvContent += `\nTOTAL GERAL;;"${reportData.grandTotal.toFixed(2).replace('.', ',')}"\n`;
+                csvContent += `RETIRADA/DEPÓSITO;;"${reportData.withdrawal.toFixed(2).replace('.', ',')}"\n`;
+                csvContent += `SALDO FINAL;;"${reportData.cashBalance.toFixed(2).replace('.', ',')}"\n`;
+                csvContent += `Data;;"${reportData.date} ${reportData.time}"\n`;
+                csvContent += `Observações;;"${reportData.notes.replace(/\n/g, ' ')}"\n`;
+
+                downloadFile(csvContent, `Fechamento_Caixa_${reportData.date.replace(/\//g, '-')}.csv`, 'text/csv;charset=utf-8;');
+                
+                saveHistoryEntry(reportData);
+            }
+
+            function exportToText() {
+                const reportData = generateReportData();
+                let textContent = `--- Relatório de Fechamento de Caixa ---\n`;
+                textContent += `Data/Hora: ${reportData.date} ${reportData.time}\n`;
+                textContent += `Modo de Contagem: ${reportData.mode}\n\n`;
+
+                const detailLines = reportData.details.map(item => {
+                    const inputLabel = reportData.mode === 'QUANTIDADE' ? 'QTD' : 'PESO (g)';
+                    const inputVal = item.input.toFixed(2);
+                    const totalVal = formatCurrency(item.total);
+                    return `${item.name.padEnd(10)} | ${inputLabel}: ${inputVal.padStart(8)} | TOTAL: R$ ${totalVal}`;
+                }).join('\n');
+                
+                textContent += detailLines;
+                textContent += '\n\n' + '-'.repeat(40) + '\n';
+                textContent += `TOTAL NO CAIXA: R$ ${formatCurrency(reportData.grandTotal)}\n`;
+                textContent += `RETIRADA/DEPÓSITO: R$ ${formatCurrency(reportData.withdrawal)}\n`;
+                textContent += `SALDO FINAL: R$ ${formatCurrency(reportData.cashBalance)}\n`;
+                
+                if (reportData.notes) {
+                    textContent += `\nObservações:\n${reportData.notes}\n`;
+                }
+                textContent += '-'.repeat(40) + '\n';
+
+                downloadFile(textContent, `Fechamento_Caixa_${reportData.date.replace(/\//g, '-')}.txt`, 'text/plain;charset=utf-8;');
+                
+                saveHistoryEntry(reportData);
+            }
+
+            function downloadFile(content, filename, mimeType) {
+                const blob = new Blob([content], { type: mimeType });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            // Helper para formatação de impressão (Small Printer)
+            const MAX_CHARS_PER_LINE = 32;
+
+            function alignLeftRight(left, right, maxLen) {
+                const space = maxLen - left.length - right.length;
+                if (space > 0) {
+                    return left + ' '.repeat(space) + right;
+                }
+                return left + right; // Caso a linha seja muito longa
+            }
+
+            function centerText(text, maxLen) {
+                if (text.length >= maxLen) return text;
+                const padding = Math.floor((maxLen - text.length) / 2);
+                return ' '.repeat(padding) + text;
+            }
+
+            function printReportForSmallPrinter() {
+                const reportData = generateReportData();
+
+                // Salva o histórico antes de imprimir
+                saveHistoryEntry(reportData);
+
+                let printContentHtml = `
+                    <html>
+                    <head>
+                        <title>Comprovante de Caixa</title>
+                        <style>
+                            .print-small-container {
+                                width: 100%;
+                                max-width: 320px;
+                                padding: 10px;
+                                font-family: monospace;
+                                font-size: 10px;
+                            }
+                            .print-small-container h3 {
+                                text-align: center;
+                                margin: 5px 0;
+                                font-size: 12px;
+                                border-bottom: 1px dashed black;
+                                padding-bottom: 5px;
+                            }
+                            .print-small-container .total-line {
+                                font-weight: bold;
+                                margin: 4px 0;
+                                white-space: pre;
+                            }
+                            .print-small-container .separator {
+                                border-top: 1px dashed black;
+                                margin: 8px 0;
+                            }
+                            .print-small-container .detail-line {
+                                margin: 2px 0;
+                                font-size: 10px;
+                                white-space: pre;
+                            }
+                            .print-small-container .center {
+                                text-align: center;
+                            }
+                            .print-small-container .footer-text {
+                                font-size: 9px;
+                                margin: 2px 0;
+                                white-space: pre;
+                            }
+                            @page { margin: 0; }
+                            body { margin: 0; padding: 0; }
+                        </style>
+                    </head>
+                    <body class="print-small-container">
+                        <h3>FECHAMENTO DE CAIXA</h3>
+                        <p class="detail-line">${alignLeftRight('Data:', reportData.date, MAX_CHARS_PER_LINE)}</p>
+                        <p class="detail-line">${alignLeftRight('Hora:', reportData.time, MAX_CHARS_PER_LINE)}</p>
+                        <div class="separator"></div>
+                `;
+
+                // 1. Detalhes (Contagem)
+                reportData.details.forEach(item => {
+                    if (item.total > 0) {
+                        const inputLabel = reportData.mode === 'QUANTIDADE' ? `QTD ${item.quantity}:` : `PESO ${item.input.toFixed(2)}g:`;
+                        const line = alignLeftRight(`${item.name} (${inputLabel})`, `R$ ${formatCurrency(item.total)}`, MAX_CHARS_PER_LINE);
+                        printContentHtml += `<p class="detail-line">${line}</p>`;
+                    }
+                });
+
+                // 2. Notas
+                if (reportData.notes) {
+                    printContentHtml += `<div class="separator"></div>`;
+                    printContentHtml += `<p class="detail-line">OBSERVAÇÕES:</p>`;
+                    // Quebra as notas em várias linhas se forem muito longas
+                    const notesLines = reportData.notes.match(new RegExp(`.{1,${MAX_CHARS_PER_LINE}}`, 'g'));
+                    notesLines.forEach(line => {
+                         printContentHtml += `<p class="detail-line">${line}</p>`;
+                    });
+                }
+
+                // 3. Total e Retirada
+                printContentHtml += `
+                        <div class="separator"></div>
+                        <p class="total-line">${alignLeftRight('TOTAL NO CAIXA:', `R$ ${formatCurrency(reportData.grandTotal)}`, MAX_CHARS_PER_LINE)}</p>
+                `;
+                
+                // Linhas de Retirada e Saldo Final
+                if (reportData.withdrawal >= 0) {
+                     printContentHtml += `
+                        <p class="total-line" style="color: #ef4444;">${alignLeftRight('(-) DEPÓSITO/ENVELOPE:', `R$ ${formatCurrency(reportData.withdrawal)}`, MAX_CHARS_PER_LINE)}</p>
+                        <p class="total-line">${alignLeftRight('(=) SALDO FINAL:', `R$ ${formatCurrency(reportData.cashBalance)}`, MAX_CHARS_PER_LINE)}</p>
+                    `;
+                }
+
+                // 4. Histórico (Log - Adicionar último item do log, se houver)
+                if (cashHistory.length > 0) {
+                    const lastEntry = cashHistory[0];
+                    printContentHtml += `
+                        <div class="separator"></div>
+                        <p class="detail-line center">---------- LOG ----------</p>
+                        <p class="detail-line">${alignLeftRight('Anterior:', `R$ ${formatCurrency(lastEntry.grandTotal)}`, MAX_CHARS_PER_LINE)}</p>
+                    `;
+                }
+                
+                // 5. Rodapé (ATUALIZADO E FORMATADO EM NEGRITO PARA DEPÓSITO)
+                printContentHtml += `
+                        <div class="separator"></div>
+                        <p class="center footer-text" style="font-weight: bold; font-size: 10px;">${centerText('INFORMAÇÕES PARA DEPÓSITO', MAX_CHARS_PER_LINE)}</p>
+                        <p class="footer-text" style="font-weight: bold;">${alignLeftRight('CONTA CORRENTE:', '060 9694500', MAX_CHARS_PER_LINE)}</p>
+                        <p class="footer-text" style="font-weight: bold;">${alignLeftRight('NOME:', 'Carlos Kipper', MAX_CHARS_PER_LINE)}</p>
+                        <p class="footer-text" style="font-weight: bold;">${alignLeftRight('FONE CONTATO:', '55 98455 7096', MAX_CHARS_PER_LINE)}</p>
+                        
+                        <!-- VALOR DE DEPÓSITO EM DESTAQUE E NEGRITO -->
+                        <p class="total-line" style="font-size: 12px; margin-top: 5px; font-weight: 900; background-color: #eee;">${alignLeftRight('VALOR ENVELOPE:', `R$ ${formatCurrency(reportData.withdrawal)}`, MAX_CHARS_PER_LINE)}</p>
+                        
+                        <div class="separator"></div>
+                        <p class="center footer-text">${centerText('Desenvolvido por Carlos Kipper', MAX_CHARS_PER_LINE)}</p>
+                    </body>
+                    </html>
+                `;
+
+                const printWindow = window.open('', '_blank', 'height=600,width=400');
+                if (printWindow) {
+                    printWindow.document.write(printContentHtml);
+                    printWindow.document.close();
+                    printWindow.focus();
+                    
+                    // Espera um pouco para o conteúdo carregar antes de imprimir
+                    printWindow.onload = () => {
+                         printWindow.print();
+                    };
+                } else {
+                    // Substitui alert() por mensagem em console
+                    console.error("Por favor, permita pop-ups para imprimir o relatório.");
+                }
+            }
+            
+            // --- Lógica de Histórico ---
+
+            function saveHistoryEntry(reportData) {
+                // Cria uma cópia limpa para salvar, sem os detalhes de contagem (para não sobrecarregar)
+                const entry = {
+                    id: Date.now(),
+                    date: reportData.date,
+                    time: reportData.time,
+                    grandTotal: reportData.grandTotal,
+                    withdrawal: reportData.withdrawal,
+                    cashBalance: reportData.cashBalance
+                };
+                
+                // Adiciona a entrada ao topo do histórico
+                cashHistory.unshift(entry);
+                // Limita o histórico a 10 entradas
+                if (cashHistory.length > 10) {
+                    cashHistory.pop();
+                }
+                
+                localStorage.setItem('cashHistory', JSON.stringify(cashHistory));
+                renderHistory();
+                clearAllFields(); // Limpa a contagem após salvar o fechamento
+            }
+
+            function deleteHistoryEntry(id) {
+                // Filtra a entrada a ser removida
+                cashHistory = cashHistory.filter(entry => entry.id !== id);
+                localStorage.setItem('cashHistory', JSON.stringify(cashHistory));
+                renderHistory();
+            }
+
+            function renderHistory() {
+                cashHistoryLog.innerHTML = '';
+                if (cashHistory.length === 0) {
+                    cashHistoryLog.innerHTML = '<li style="justify-content: center; color: var(--muted-text-color);">Nenhum fechamento salvo.</li>';
+                    return;
+                }
+
+                cashHistory.forEach(entry => {
+                    const listItem = document.createElement('li');
+                    
+                    // Formata a data para exibir dia e hora
+                    const dateTime = `${entry.date} ${entry.time}`;
+                    
+                    // Mostra o saldo final no histórico
+                    const totalDisplay = entry.withdrawal > 0 
+                        ? `Saldo: R$ ${formatCurrency(entry.cashBalance)}`
+                        : `Total: R$ ${formatCurrency(entry.grandTotal)}`;
+
+                    listItem.innerHTML = `
+                        <span class="history-date">${dateTime}</span>
+                        <span class="history-total">${totalDisplay}</span>
+                        <button class="history-delete-btn" data-id="${entry.id}">×</button>
+                    `;
+                    cashHistoryLog.appendChild(listItem);
+                });
+
+                // Adiciona listeners para os botões de exclusão
+                cashHistoryLog.querySelectorAll('.history-delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        // Não usa alert/confirm
+                        deleteHistoryEntry(parseInt(e.target.dataset.id));
+                    });
+                });
+            }
+
+            // --- Inicialização ---
+
+            // Restaura o modo
+            const savedMode = localStorage.getItem('cashCounterMode');
+            if (savedMode) {
+                currentMode = savedMode;
+            }
+            
+            function initializeInputs() {
+                // Inicializa o input de notas
+                if (notesInput) {
+                    addInputListeners(notesInput);
+                }
+                
+                // Campo de Retirada (agora mais simples e responsivo à digitação)
+                if (withdrawalInput) {
+                    // Simplificado: usa apenas 'input' para recalcular o total.
+                    withdrawalInput.addEventListener('input', calculateTotals);
+                    withdrawalInput.addEventListener('focus', handleFocus);
+                    
+                    // Ao sair, arredonda para 2 casas decimais (estético, não afeta o cálculo do 'input')
+                    withdrawalInput.addEventListener('blur', (event) => {
+                         let val = parseFloat(event.target.value) || 0;
+                         event.target.value = val.toFixed(2);
+                         handleBlur(event);
+                    });
+                    
+                    // Garante que o valor inicial seja '0.00'
+                    let val = parseFloat(withdrawalInput.value) || 0;
+                    withdrawalInput.value = val.toFixed(2);
+                }
+            }
+
+
+            // Adiciona ouvintes de evento para os botões
+            clearAllBtn.addEventListener('click', clearAllFields);
+            exportCsvBtn.addEventListener('click', exportToCsv);
+            exportTextBtn.addEventListener('click', exportToText);
+            printSmallBtn.addEventListener('click', printReportForSmallPrinter);
+            toggleModeBtn.addEventListener('click', toggleMode);
+
+            // Chamada de inicialização
+            initializeInputs();
+            updateModeInterface(); // Isso renderiza os inputs e chama initializeInputListeners
+            calculateTotals();
+            updateDateTime();
+            renderHistory();
+        });
+    </script>
+</body>
+</html>
