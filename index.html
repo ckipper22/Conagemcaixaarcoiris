@@ -199,6 +199,7 @@
         <div class="header text-center mb-6 border-b pb-4 border-gray-200">
             <h1 class="text-2xl font-bold text-gray-800">Fechamento de Caixa</h1>
             <p id="currentDateTime" class="text-sm text-muted-text-color mt-1"></p>
+            <!-- O indicador de modo agora reflete o estado global, mas a lógica só afeta as moedas -->
             <span id="modeIndicator" class="mode-indicator px-3 py-1 rounded-full text-xs font-semibold mt-2 inline-block">MODO: QUANTIDADE</span>
         </div>
 
@@ -236,6 +237,7 @@
 
                 <!-- 4. BOTÕES DE AÇÃO -->
                 <div class="action-buttons grid grid-cols-2 gap-3 mb-4">
+                    <!-- O texto do botão reflete a MUDANÇA DE MODO, mas o efeito é seletivo -->
                     <button id="toggleModeBtn" class="btn bg-secondary text-white hover:bg-blue-700 py-3 rounded-lg transition duration-150">Mudar Modo (QTD/PESO)</button>
                     <button id="clearAllBtn" class="btn bg-warning text-gray-900 hover:bg-yellow-600 py-3 rounded-lg transition duration-150">Limpar Tudo</button>
                     <button id="printSmallBtn" class="btn bg-primary text-white hover:bg-indigo-700 py-3 rounded-lg transition duration-150 col-span-2">Imprimir Comprovante e Salvar</button>
@@ -272,19 +274,20 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // Definições de Cédulas e Moedas (Valor, Nome, Multiplicador de Pesagem em gramas)
+            // ADICIONADO: 'isCoin' para identificar moedas.
             const DENOMINATIONS = [
-                { value: 200.00, name: 'R$ 200,00', weight: 0.9 }, // Exemplo de peso
-                { value: 100.00, name: 'R$ 100,00', weight: 0.9 },
-                { value: 50.00, name: 'R$ 50,00', weight: 0.9 },
-                { value: 20.00, name: 'R$ 20,00', weight: 0.9 },
-                { value: 10.00, name: 'R$ 10,00', weight: 0.9 },
-                { value: 5.00, name: 'R$ 5,00', weight: 0.9 },
-                { value: 2.00, name: 'R$ 2,00', weight: 0.9 },
-                { value: 1.00, name: 'R$ 1,00 Moeda', weight: 7.0 },
-                { value: 0.50, name: 'R$ 0,50', weight: 6.8 },
-                { value: 0.25, name: 'R$ 0,25', weight: 5.7 },
-                { value: 0.10, name: 'R$ 0,10', weight: 4.8 },
-                { value: 0.05, name: 'R$ 0,05', weight: 3.2 },
+                { value: 200.00, name: 'R$ 200,00', weight: 0.9, isCoin: false }, 
+                { value: 100.00, name: 'R$ 100,00', weight: 0.9, isCoin: false },
+                { value: 50.00, name: 'R$ 50,00', weight: 0.9, isCoin: false },
+                { value: 20.00, name: 'R$ 20,00', weight: 0.9, isCoin: false },
+                { value: 10.00, name: 'R$ 10,00', weight: 0.9, isCoin: false },
+                { value: 5.00, name: 'R$ 5,00', weight: 0.9, isCoin: false },
+                { value: 2.00, name: 'R$ 2,00', weight: 0.9, isCoin: false },
+                { value: 1.00, name: 'R$ 1,00 Moeda', weight: 7.0, isCoin: true },
+                { value: 0.50, name: 'R$ 0,50', weight: 6.8, isCoin: true },
+                { value: 0.25, name: 'R$ 0,25', weight: 5.7, isCoin: true },
+                { value: 0.10, name: 'R$ 0,10', weight: 4.8, isCoin: true },
+                { value: 0.05, name: 'R$ 0,05', weight: 3.2, isCoin: true },
             ];
             
             // Constantes e Variáveis de Estado
@@ -294,7 +297,7 @@
             // Elementos DOM
             const coinInputsContainer = document.getElementById('coinInputs');
             const grandTotalDisplay = document.getElementById('grandTotal');
-            const cashBalanceDisplay = document.getElementById('cashBalanceDisplay'); // Novo display para o saldo final
+            const cashBalanceDisplay = document.getElementById('cashBalanceDisplay'); 
             const clearAllBtn = document.getElementById('clearAllBtn');
             const exportCsvBtn = document.getElementById('exportCsvBtn');
             const exportTextBtn = document.getElementById('exportTextBtn');
@@ -326,7 +329,7 @@
                 
                 dateTimeDisplay.textContent = `Data: ${dateStr} | Hora: ${timeStr}`;
             }
-            setInterval(updateDateTime, 1000); // Atualiza a cada segundo
+            setInterval(updateDateTime, 1000); 
 
             // --- Lógica Principal de Cálculo ---
 
@@ -340,11 +343,15 @@
                         let value = parseFloat(input.value) || 0;
                         let totalDenomination = 0;
 
-                        if (currentMode === 'quantity') {
-                            // MODO QUANTIDADE: Input é a contagem
+                        // Determina o modo de contagem para esta denominação
+                        // Se for MODO QUANTIDADE OU for CÉDULA, usa QUANTIDADE
+                        const isQuantityMode = currentMode === 'quantity' || !denomination.isCoin;
+
+                        if (isQuantityMode) {
+                            // MODO QUANTIDADE (Cédulas e Moedas no modo QTD)
                             totalDenomination = value * denomination.value;
                         } else {
-                            // MODO PESAGEM: Input é o peso (g), e precisamos calcular a quantidade
+                            // MODO PESAGEM (Apenas Moedas no modo Peso)
                             const weightPerUnit = denomination.weight;
                             if (weightPerUnit > 0) {
                                 // Evita precisão flutuante excessiva
@@ -376,10 +383,18 @@
 
                 DENOMINATIONS.forEach(denomination => {
                     const id = denomination.value.toFixed(2).replace('.', '-');
-                    const labelText = currentMode === 'quantity' ? 'Qtd:' : 'Peso (g):';
-                    const placeholderText = currentMode === 'quantity' ? '0' : '0.00';
-                    // No modo quantidade, o step deve ser 1, no modo pesagem, 0.01 (para maior precisão)
-                    const stepValue = currentMode === 'quantity' ? '1' : '0.01';
+                    
+                    // Determina o label e o step
+                    let labelText = 'Qtd:';
+                    let placeholderText = '0';
+                    let stepValue = '1';
+
+                    // SE for MOEDA E o MODO estiver em PESAGEM, altera
+                    if (denomination.isCoin && currentMode === 'weight') {
+                         labelText = 'Peso (g):';
+                         placeholderText = '0.00';
+                         stepValue = '0.01';
+                    }
                     
                     const group = document.createElement('div');
                     group.className = 'currency-input-group flex-col items-start'; // Flex col para mobile
@@ -387,7 +402,18 @@
                     // Adiciona o valor da denominação em destaque
                     const denominationValue = document.createElement('span');
                     denominationValue.className = 'text-lg font-bold text-primary mb-2 block';
-                    denominationValue.textContent = denomination.name;
+                    
+                    // Adiciona um aviso de modo para as moedas
+                    let modeNote = '';
+                    if (denomination.isCoin && currentMode === 'weight') {
+                        modeNote = ' (PESO)';
+                    } else if (denomination.isCoin && currentMode === 'quantity') {
+                        modeNote = ' (QTD)';
+                    } else if (!denomination.isCoin) {
+                        modeNote = ' (CÉDULA)';
+                    }
+                    
+                    denominationValue.textContent = denomination.name + modeNote;
 
                     // Container para Label e Input
                     const inputRow = document.createElement('div');
@@ -431,10 +457,17 @@
                 // Formatação simples ao sair do campo (para estética)
                 let val = parseFloat(input.value) || 0;
                 if (input.type === 'number') {
-                     // Garante 0 casas decimais para quantidade, 2 para pesagem e retirada
-                     if (currentMode === 'quantity' && input.id.startsWith('input-')) {
+                     // Determina se é um campo de Quantidade (cédula ou moeda em modo QTD)
+                     // O ID de um input de moeda sempre terá um ponto (ex: 1-00, 0-50), cédulas não (ex: 200-00)
+                     const denomination = DENOMINATIONS.find(d => `input-${d.value.toFixed(2).replace('.', '-')}` === input.id);
+                     
+                     // Se for cédula OU for moeda em modo quantidade, arredonda
+                     const isQuantityInput = !denomination || denomination.isCoin && currentMode === 'quantity'; 
+
+                     if (isQuantityInput) {
                         input.value = Math.round(val);
                      } else {
+                        // Senão, é Peso/Depósito (2 casas)
                         input.value = val.toFixed(2);
                      }
                 }
@@ -452,11 +485,12 @@
 
             function updateModeInterface() {
                 if (currentMode === 'quantity') {
-                    modeIndicator.textContent = 'MODO: QUANTIDADE';
+                    modeIndicator.textContent = 'MODO GLOBAL: QUANTIDADE';
                     modeIndicator.className = 'mode-indicator px-3 py-1 rounded-full text-xs font-semibold mt-2 inline-block bg-accent text-white';
-                    toggleModeBtn.textContent = 'Mudar para Modo Pesagem';
+                    toggleModeBtn.textContent = 'Mudar para Modo Pesagem (Moedas)';
                 } else {
-                    modeIndicator.textContent = 'MODO: PESAGEM';
+                    // Aviso: Modo Pesagem Ativo (apenas Moedas)
+                    modeIndicator.textContent = 'MODO GLOBAL: PESAGEM (Moedas)';
                     modeIndicator.className = 'mode-indicator px-3 py-1 rounded-full text-xs font-semibold mt-2 inline-block bg-warning text-gray-800';
                     toggleModeBtn.textContent = 'Mudar para Modo Quantidade';
                 }
@@ -489,12 +523,12 @@
                 const report = {
                     date: new Date().toLocaleDateString('pt-BR'),
                     time: new Date().toLocaleTimeString('pt-BR'),
-                    mode: currentMode === 'quantity' ? 'QUANTIDADE' : 'PESAGEM',
+                    mode: currentMode === 'quantity' ? 'QUANTIDADE' : 'PESAGEM (Moedas)', // Ajustado para o relatório
                     details: [],
                     notes: notesInput.value.trim(),
                     grandTotal: 0,
-                    withdrawal: 0, // Valor da retirada
-                    cashBalance: 0, // Saldo final
+                    withdrawal: 0, 
+                    cashBalance: 0, 
                     history: []
                 };
 
@@ -506,16 +540,25 @@
                         const inputValue = parseFloat(input.value) || 0;
                         let quantity = 0;
                         let totalDenomination = 0;
+                        let inputTypeLabel = 'QTD'; // Padrão
                         
-                        if (currentMode === 'quantity') {
+                        // Determina o modo de contagem para esta denominação
+                        const isQuantityMode = currentMode === 'quantity' || !denomination.isCoin;
+
+                        if (isQuantityMode) {
+                            // MODO QUANTIDADE (Cédulas e Moedas no modo QTD)
                             quantity = inputValue;
                             totalDenomination = quantity * denomination.value;
+                            inputTypeLabel = 'QTD';
+
                         } else {
+                            // MODO PESAGEM (Apenas Moedas no modo Peso)
                             const weightPerUnit = denomination.weight;
                             if (weightPerUnit > 0) {
                                 quantity = inputValue / weightPerUnit;
                                 totalDenomination = quantity * denomination.value;
                             }
+                            inputTypeLabel = 'PESO (g)';
                         }
                         
                         currentGrandTotal += totalDenomination;
@@ -523,6 +566,7 @@
                         report.details.push({
                             name: denomination.name,
                             input: inputValue,
+                            inputTypeLabel: inputTypeLabel, // Adicionado para o relatório
                             quantity: Math.round(quantity), // Quantidade arredondada para o relatório
                             total: totalDenomination
                         });
@@ -543,7 +587,8 @@
 
             function exportToCsv() {
                 const reportData = generateReportData();
-                const headers = ['Denominação', reportData.mode === 'QUANTIDADE' ? 'Quantidade' : 'Peso (g)', 'Total'];
+                // O cabeçalho agora usa o inputTypeLabel do primeiro item como referência
+                const headers = ['Denominação', 'Input (Qtd/Peso)', 'Total']; 
                 let csvContent = headers.join(';') + '\n';
 
                 reportData.details.forEach(item => {
@@ -551,7 +596,8 @@
                     if (item.total > 0) {
                         const inputVal = item.input.toFixed(2).replace('.', ',');
                         const totalVal = item.total.toFixed(2).replace('.', ',');
-                        csvContent += `${item.name};"${inputVal}";"${totalVal}"\n`;
+                        // Adiciona o rótulo do input (QTD ou PESO) para clareza
+                        csvContent += `${item.name} (${item.inputTypeLabel});"${inputVal}";"${totalVal}"\n`; 
                     }
                 });
                 
@@ -574,7 +620,7 @@
                 textContent += `Modo de Contagem: ${reportData.mode}\n\n`;
 
                 const detailLines = reportData.details.filter(item => item.total > 0).map(item => {
-                    const inputLabel = reportData.mode === 'QUANTIDADE' ? 'QTD' : 'PESO (g)';
+                    const inputLabel = item.inputTypeLabel; // Usa o label específico
                     const inputVal = item.input.toFixed(2);
                     const totalVal = formatCurrency(item.total);
                     return `${item.name.padEnd(10)} | ${inputLabel}: ${inputVal.padStart(8)} | TOTAL: R$ ${totalVal}`;
@@ -685,7 +731,8 @@
 
                 // 2. Detalhes (Contagem)
                 reportData.details.filter(item => item.total > 0).forEach(item => {
-                    const inputLabel = reportData.mode === 'QUANTIDADE' ? `QTD ${item.quantity}:` : `PESO ${item.input.toFixed(2)}g:`;
+                    // Usa o inputTypeLabel específico (QTD ou PESO (g))
+                    const inputLabel = `${item.inputTypeLabel} ${item.input.toFixed(2)}:`; 
                     const line = alignLeftRight(`${item.name} (${inputLabel})`, `R$ ${formatCurrency(item.total)}`, MAX_CHARS_PER_LINE);
                     printContentHtml += `<p class="detail-line">${line}</p>`;
                 });
