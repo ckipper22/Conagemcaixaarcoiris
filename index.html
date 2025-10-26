@@ -615,23 +615,25 @@
                     <head>
                         <title>Comprovante de Caixa</title>
                         <style>
-                             /* (Estilos de Impressão) */
+                            /* OTIMIZAÇÃO PARA IMPRESSORA TÉRMICA */
                             .print-small-container {
                                 width: 100%;
                                 max-width: 320px;
                                 padding: 10px;
                                 font-family: monospace;
                                 font-size: 10px;
+                                color: black; /* Garante tinta preta */
                             }
                             .print-small-container h3 {
                                 text-align: center;
                                 margin: 5px 0;
-                                font-size: 12px;
-                                border-bottom: 1px dashed black;
+                                font-size: 13px; /* Um pouco maior */
+                                font-weight: 900; /* Mais denso */
+                                border-bottom: 2px dashed black; /* Borda mais grossa */
                                 padding-bottom: 5px;
                             }
                             .print-small-container .total-line {
-                                font-weight: bold;
+                                font-weight: 900; /* Extra bold para Totais */
                                 margin: 4px 0;
                                 white-space: pre;
                             }
@@ -643,6 +645,7 @@
                                 margin: 2px 0;
                                 font-size: 10px;
                                 white-space: pre;
+                                font-weight: bold; /* Detalhes em negrito para melhor definição */
                             }
                             .print-small-container .center {
                                 text-align: center;
@@ -651,13 +654,15 @@
                                 font-size: 9px;
                                 margin: 2px 0;
                                 white-space: pre;
+                                font-weight: 900; /* Rodapé extra bold */
                             }
+                            /* Remove margens da página para o cupom */
                             @page { margin: 0; }
                             body { margin: 0; padding: 0; }
                         </style>
                     </head>
                     <body class="print-small-container">
-                        <h3>FECHAMENTO DE CAIXA</h3>
+                        <h3>${centerText('FECHAMENTO DE CAIXA', MAX_CHARS_PER_LINE)}</h3>
                         <p class="detail-line">${alignLeftRight('Data:', reportData.date, MAX_CHARS_PER_LINE)}</p>
                         <p class="detail-line">${alignLeftRight('Hora:', reportData.time, MAX_CHARS_PER_LINE)}</p>
                         <div class="separator"></div>
@@ -673,10 +678,10 @@
                 // 3. Notas
                 if (reportData.notes) {
                     printContentHtml += `<div class="separator"></div>`;
-                    printContentHtml += `<p class="detail-line">OBSERVAÇÕES:</p>`;
+                    printContentHtml += `<p class="detail-line" style="font-weight: 900;">OBSERVAÇÕES:</p>`;
                     const notesLines = reportData.notes.match(new RegExp(`.{1,${MAX_CHARS_PER_LINE}}`, 'g'));
                     notesLines.forEach(line => {
-                         printContentHtml += `<p class="detail-line">${line}</p>`;
+                         printContentHtml += `<p class="detail-line" style="font-weight: bold;">${line}</p>`;
                     });
                 }
 
@@ -688,7 +693,7 @@
                 
                 if (reportData.withdrawal >= 0) {
                      printContentHtml += `
-                        <p class="total-line" style="color: #ef4444;">${alignLeftRight('(-) DEPÓSITO/ENVELOPE:', `R$ ${formatCurrency(reportData.withdrawal)}`, MAX_CHARS_PER_LINE)}</p>
+                        <p class="total-line" style="color: #ef4444; background-color: #f0f0f0; padding: 2px 0; ">${alignLeftRight('(-) DEPÓSITO/ENVELOPE:', `R$ ${formatCurrency(reportData.withdrawal)}`, MAX_CHARS_PER_LINE)}</p>
                         <p class="total-line">${alignLeftRight('(=) SALDO FINAL:', `R$ ${formatCurrency(reportData.cashBalance)}`, MAX_CHARS_PER_LINE)}</p>
                     `;
                 }
@@ -696,15 +701,15 @@
                 // 5. Rodapé
                 printContentHtml += `
                         <div class="separator"></div>
-                        <p class="center footer-text" style="font-weight: bold; font-size: 10px;">${centerText('INFORMAÇÕES PARA DEPÓSITO', MAX_CHARS_PER_LINE)}</p>
-                        <p class="footer-text" style="font-weight: bold;">${alignLeftRight('CONTA CORRENTE:', '060 9694500', MAX_CHARS_PER_LINE)}</p>
-                        <p class="footer-text" style="font-weight: bold;">${alignLeftRight('NOME:', 'Carlos Kipper', MAX_CHARS_PER_LINE)}</p>
-                        <p class="footer-text" style="font-weight: bold;">${alignLeftRight('FONE CONTATO:', '55 98455 7096', MAX_CHARS_PER_LINE)}</p>
+                        <p class="center footer-text" style="font-size: 10px;">${centerText('INFORMAÇÕES PARA DEPÓSITO', MAX_CHARS_PER_LINE)}</p>
+                        <p class="footer-text">${alignLeftRight('CONTA CORRENTE:', '060 9694500', MAX_CHARS_PER_LINE)}</p>
+                        <p class="footer-text">${alignLeftRight('NOME:', 'Carlos Kipper', MAX_CHARS_PER_LINE)}</p>
+                        <p class="footer-text">${alignLeftRight('FONE CONTATO:', '55 98455 7096', MAX_CHARS_PER_LINE)}</p>
                         
-                        <p class="total-line" style="font-size: 12px; margin-top: 5px; font-weight: 900; background-color: #eee;">${alignLeftRight('VALOR ENVELOPE:', `R$ ${formatCurrency(reportData.withdrawal)}`, MAX_CHARS_PER_LINE)}</p>
+                        <p class="total-line" style="font-size: 12px; margin-top: 5px; font-weight: 900; background-color: #eee; padding: 4px 0;">${alignLeftRight('VALOR ENVELOPE:', `R$ ${formatCurrency(reportData.withdrawal)}`, MAX_CHARS_PER_LINE)}</p>
                         
                         <div class="separator"></div>
-                        <p class="center footer-text">${centerText('Desenvolvido por Carlos Kipper', MAX_CHARS_PER_LINE)}</p>
+                        <p class="center footer-text" style="font-weight: bold;">${centerText('Desenvolvido por Carlos Kipper', MAX_CHARS_PER_LINE)}</p>
                     </body>
                     </html>
                 `;
